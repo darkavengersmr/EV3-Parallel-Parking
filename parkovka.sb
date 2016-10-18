@@ -1,0 +1,76 @@
+Sensor.SetMode(1,0)
+Sensor.SetMode(2,0)
+Sensor.SetMode(4,0)
+k = 2
+Pk = 7
+Dk = 10  
+Popr = 12
+Ug = 0
+M = "A"
+e_o = 0
+trigger = "False"
+Motor.Start("B",-75)
+Motor.Start("C",-75)
+
+While "True"
+  While "True"
+    r = Sensor.ReadPercent(1)-(Sensor.ReadPercent(2)+Popr)
+    Ug = r * k
+    e = Ug - Motor.GetCount("A")  
+    Motor.Start(M,e*Pk+Dk*(e-e_o))
+    e_o = e
+    
+    tmp = Sensor.ReadPercent(4)
+    
+    If tmp < 22 Then
+      If trigger = "False" Then
+        Motor.ResetCount("BC")
+        trigger = "True"
+      Else
+        if (Motor.GetCount("B") + Motor.GetCount("C")) / 2 < -979 Then
+          Goto parkovka
+          trigger = "False"
+        Else
+          Motor.ResetCount("BC")
+          trigger = "True"
+        EndIf
+      EndIf
+    EndIf
+       
+  EndWhile    
+  
+  
+  parkovka:
+  
+  Speaker.Note(100,"C4",500)
+  
+  Motor.ResetCount("BC")
+  
+  While (Motor.GetCount("B") + Motor.GetCount("C"))/2 > -500
+    r = Sensor.ReadPercent(1)-(Sensor.ReadPercent(2)+Popr)
+    Ug = r * k
+    e = Ug - Motor.GetCount("A")  
+    Motor.Start(M,e*Pk+Dk*(e-e_o))
+    e_o = e
+  EndWhile
+  
+  Motor.Schedule("A",30,0,90,0,"True")
+  Motor.Schedule("BC",30,0,530,0,"True")
+  Motor.Wait("ABC")
+  Motor.Schedule("A",-30,0,115,0,"True")
+  Motor.Schedule("BC",30,0,950,0,"True")
+  Motor.Wait("ABC")
+  
+  Motor.Stop("BC","True")
+  Program.Delay(1000)
+  
+  Motor.Schedule("A",50,0,15,0,"False")
+  Motor.Schedule("BC",-30,0,730,0,"True")
+  Motor.Wait("ABC")
+  Motor.Schedule("A",30,0,65,0,"True")
+  Motor.Schedule("BC",-30,0,250,0,"True")
+  Motor.Wait("ABC")
+  
+  Motor.Start("B",-75)
+  Motor.Start("C",-75)
+EndWhile
